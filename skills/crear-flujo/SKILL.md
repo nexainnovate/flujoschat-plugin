@@ -22,6 +22,12 @@ JSON con dos claves: `flow` (metadatos) y `steps` (los pasos, con sus transicion
 3. **Diseña el JSON `{ flow, steps }`** siguiendo el contrato:
    - `trigger`: `KEYWORD` (con `triggerKeywords`), `WELCOME` (conversación nueva) o `REFERRAL`
      (llega desde un anuncio, con `triggerReferralIds`).
+   - `channels`: por qué canales responde (por defecto solo `["WHATSAPP"]`). Es opt-in estricto:
+     para que el flujo conteste en el **chat web** del negocio hay que incluir `"WEBCHAT"`
+     (p. ej. `["WHATSAPP","WEBCHAT"]`); lo mismo con `INSTAGRAM`, `MESSENGER`, `TELEGRAM` y
+     `TIKTOK`. Mira antes qué canales tiene conectados la empresa con
+     **`list_connected_channels`**; si falta el que quiere, **`get_channel_connect_link`** da el
+     enlace del panel para conectarlo (`webchat` para el chat web).
    - Cada paso: `stepOrder` (número), `stepType`, `name`, `config`.
    - Avance lineal con `nextStepId` (acepta el `stepOrder` del destino).
    - Bifurcaciones con `transitions[]`: **una por cada botón o fila**, con condición `BUTTON`
@@ -48,6 +54,8 @@ JSON con dos claves: `flow` (metadatos) y `steps` (los pasos, con sus transicion
 - El campo es **`nextStepId`** (no `nextStepOrder`); acepta un `stepOrder` numérico.
 - `trigger` admite `KEYWORD | WELCOME | EVENT | MANUAL | REFERRAL` (auto-disparan KEYWORD,
   WELCOME y REFERRAL).
+- `channels` nunca va vacío y un canal que no esté en la lista no dispara el flujo: sin
+  `"WEBCHAT"` el flujo no responde en el chat web aunque el widget esté instalado.
 - **Nunca `ANY` en un paso con botones o lista.** WhatsApp no desactiva los botones de mensajes
   anteriores y el motor acepta esos clics: un `ANY` captura respuestas que no le corresponden
   (variables corruptas, bucles). Cada botón o fila lleva su transición.

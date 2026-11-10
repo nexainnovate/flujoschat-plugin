@@ -14,8 +14,12 @@ Requiere el servidor MCP de FlujosChat conectado.
    (con el `flowId`) para ver sus pasos y transiciones actuales.
 
 2. **Elige la acción:**
-   - **Metadatos** (nombre, descripción, trigger, triggerKeywords, prioridad, activar/desactivar):
-     usa **`update_flow`** con `flowId` y solo los campos a cambiar.
+   - **Metadatos** (nombre, descripción, trigger, triggerKeywords, canales, prioridad,
+     activar/desactivar): usa **`update_flow`** con `flowId` y solo los campos a cambiar.
+   - **Canales:** `update_flow` con `channels` es la única forma de cambiar por qué canales
+     responde el flujo, y la lista se REEMPLAZA entera: para que además conteste en el chat web,
+     manda los que ya tenía más `"WEBCHAT"` (p. ej. `["WHATSAPP","WEBCHAT"]`). Omitirlo conserva
+     los actuales. **`list_connected_channels`** dice qué canales tiene conectados la empresa.
    - **Duplicar:** **`duplicate_flow`** (`flowId`, `newName`). El clon queda inactivo.
    - **Eliminar:** **`delete_flow`** (`flowId`). Irreversible — confirma con el usuario.
    - **Imagen de un paso:** **`set_flow_step_image`** (`flowId`, `stepOrder` o `stepId`, `imageUrl`

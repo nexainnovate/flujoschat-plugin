@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs';
 
 const TRIGGERS = ['KEYWORD', 'WELCOME', 'EVENT', 'MANUAL', 'REFERRAL'];
+const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'TELEGRAM', 'TIKTOK', 'MESSENGER', 'WEBCHAT'];
 const STEP_TYPES = ['MESSAGE', 'QUESTION', 'CONDITION', 'WAIT', 'API_CALL', 'AI_HANDOFF', 'PAYMENT', 'END'];
 const CONDITIONS = ['EXACT_MATCH', 'CONTAINS', 'STARTS_WITH', 'REGEX', 'ANY', 'BUTTON', 'LIST'];
 
@@ -58,6 +59,13 @@ if (!flow || typeof flow !== 'object') {
 } else {
   if (!strLen(flow.name, 3, 100)) errors.push('flow.name: string de 3 a 100 caracteres (requerido).');
   if (!TRIGGERS.includes(flow.trigger)) errors.push(`flow.trigger: debe ser uno de ${TRIGGERS.join(', ')}.`);
+  if (flow.channels !== undefined) {
+    if (!Array.isArray(flow.channels) || !flow.channels.length) {
+      errors.push('flow.channels: no puede ir vacío (un flujo sin canales no arranca nunca); omítelo para usar ["WHATSAPP"].');
+    } else {
+      for (const c of flow.channels) if (!CHANNELS.includes(c)) errors.push(`flow.channels: «${c}» no es un canal; usa ${CHANNELS.join(', ')}.`);
+    }
+  }
   if (flow.priority != null && !inRange(flow.priority, 1, 100)) errors.push('flow.priority: entero 1–100.');
   if (flow.trigger === 'KEYWORD' && !(Array.isArray(flow.triggerKeywords) && flow.triggerKeywords.length)) {
     errors.push('flow.trigger KEYWORD sin triggerKeywords: el flujo nunca se dispararía.');

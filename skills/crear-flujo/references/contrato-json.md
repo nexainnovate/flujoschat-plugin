@@ -12,8 +12,13 @@ Este documento es el respaldo cuando el MCP no está conectado; la fuente viva e
 | trigger | enum | sí | `KEYWORD` · `WELCOME` · `EVENT` · `MANUAL` · `REFERRAL`. Auto-disparan KEYWORD, WELCOME y REFERRAL (cuando el cliente llega desde un anuncio) |
 | triggerKeywords | string[] | no | relevante con KEYWORD |
 | triggerReferralIds | string[] | no | con REFERRAL: ids de anuncio que lo disparan; vacío = cualquier anuncio |
+| channels | enum[] | no | `WHATSAPP` · `INSTAGRAM` · `TELEGRAM` · `TIKTOK` · `MESSENGER` · `WEBCHAT`. Default `["WHATSAPP"]`. Opt-in estricto: el flujo NO se dispara en un canal que no esté en la lista, y no puede ir vacía. Para que responda en el chat web del negocio (`WEBCHAT`, «Web» en el panel) hay que incluirlo: `["WHATSAPP","WEBCHAT"]` |
 | priority | int 1–100 | no | default 10 |
 | isActive | boolean | no | default true |
+
+El chat web (`WEBCHAT`) admite texto, imágenes, vídeo y documentos por URL, ubicación, botones y
+listas de verdad; sin plantillas ni ventana de tiempo. Audio y lo que el widget no pinta pasan la
+conversación a una persona. No hay teléfono del cliente salvo que lo dé.
 
 ## steps[]
 | Campo | Tipo | Req | Notas |

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.2 — 2026-11-10
+
+- **Nuevo**: el campo `channels` de un flujo (`WHATSAPP`, `INSTAGRAM`, `TELEGRAM`, `TIKTOK`,
+  `MESSENGER` y el nuevo `WEBCHAT`) en `crear-flujo`, su contrato JSON y `editar-flujo`. Para que
+  un flujo responda en el chat web del negocio hay que incluir `"WEBCHAT"` en `channels`: es
+  opt-in estricto y por defecto solo va `["WHATSAPP"]`.
+- **Nuevo**: `list_connected_channels` (qué canales tiene conectados la empresa, chat web
+  incluido) y `get_channel_connect_link` (enlace del panel para conectar uno).
+
 ## 1.3.1 — 2026-10-25
 
 - **Cambiado**: el repositorio pasa a la organización `nexainnovate`

@@ -45,8 +45,16 @@ Antes de seguir: cada hallazgo tiene un cambio concreto (prompt, herramienta, co
   tocas. Produce un antes/después por sección cambiada.
 - **Categorías y herramientas:** parte de la lista actual de `get_agent`, aplica altas y bajas y
   muestra la LISTA FINAL completa marcando qué entra y qué sale. Ids nuevos verificados con
-  `list_knowledge_categories` y `list_ai_tools`. Una capacidad integrada que no exista como fila
-  se activa en el panel, no aquí.
+  `list_knowledge_categories` y `list_ai_tools`. Para una sola herramienta, `update_agent` acepta
+  `addToolIds` / `removeToolIds` en vez de la lista entera (no se combinan con `toolIds`). Una
+  capacidad integrada que no exista como fila se enciende con `create_ai_tool` (tipo `BUILTIN`);
+  sus ajustes (agenda, hojas, números del dueño…) siguen en el panel.
+- **Fotos:** `imageAttachments` también REEMPLAZA la lista: parte de la actual, y para una foto
+  nueva reutiliza `list_agent_images` o súbela con `upload_agent_image`. Sin la capacidad
+  `imagenes` atada, las fotos se guardan pero no salen.
+- **Campos de la ficha:** si el cambio necesita un campo que no existe (para `{{campo.…}}` o para
+  la capacidad `contacto`), `list_custom_fields` y luego `create_custom_field`. No se editan ni se
+  borran por aquí.
 - **`isActive` en falso:** avisa qué equipos pierden a este agente y si era la entrada (el
   equipo quedará roto; `validate_team` lo dirá). Es reversible: preferible a borrar.
 - **Modelo:** solo los de la lista del esquema para el modo actual; si no, avisa del cambio
@@ -70,6 +78,25 @@ las conversaciones que entren desde ahora". Pregunta: "¿Guardo estos cambios?" 
    recuerda que las variables salen `(sin dato)` y que las capacidades integradas dicen que
    están en una prueba). Si el dueño trajo una conversación que fallaba, repite ese escenario y
    uno que funcionaba.
+
+### El prompt con borrador (si el agente ya atiende)
+
+`update_agent` con `instructions` publica al instante. Para revisar antes de que corra, o para
+poder volver atrás, usa el borrador:
+
+1. `list_agent_prompt_versions`: lo publicado y su versión, el borrador si existe (con su
+   `updatedAt`) y el historial de versiones.
+2. `save_agent_prompt_draft` con el texto COMPLETO. Al empezar un borrador manda `basedOnVersion`
+   (la versión publicada que revisaste); si ya había uno, `expectedDraftUpdatedAt` con su
+   `updatedAt`, para no pisar cambios de otra persona. El agente sigue con lo publicado. Una
+   plantilla con errores se guarda igual, con aviso, y no se puede publicar.
+3. `diff_agent_prompt` (por defecto, lo publicado contra el borrador) y enseña ese diff en la
+   puerta del paso 4.
+4. Con el sí, `publish_agent_prompt` con `expectedDraftUpdatedAt` y una `note` que diga qué cambia.
+   Si falla porque se publicó otra versión después de empezar el borrador, vuelve a comparar y
+   guárdalo otra vez con `rebase`.
+5. Volver atrás: `publish_agent_prompt` con `restoreVersion` publica una versión anterior como
+   versión nueva; no borra nada.
 
 ## 6. Borrar
 

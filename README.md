@@ -1,15 +1,17 @@
 # Plugin de FlujosChat para Claude Code
 
-Crea y edita **flujos de WhatsApp** y **agentes de IA** de [FlujosChat](https://www.flujoschat.com)
-directamente desde Claude, vía un servidor **MCP remoto** protegido con **OAuth 2.1**.
+Crea y edita **flujos de WhatsApp** y **agentes de IA**, y publica en **Instagram, Facebook y LinkedIn**,
+en [FlujosChat](https://www.flujoschat.com) directamente desde Claude, vía un servidor **MCP remoto** protegido con **OAuth 2.1**.
 
 ## Qué incluye
 
-- **Servidor MCP remoto** (`.mcp.json`): se conecta a tu cuenta de FlujosChat y expone 45 tools
-  para flujos (crear, editar, duplicar, borrar, imágenes) y para todo el módulo de IA (agentes,
-  equipos, herramientas, base de conocimiento, saldo). Dos de ellas traen el contrato completo y
+- **Servidor MCP remoto** (`.mcp.json`): se conecta a tu cuenta de FlujosChat y expone 88 tools
+  para flujos (crear, editar paso a paso, duplicar, borrar, imágenes), para todo el módulo de IA
+  (agentes, borrador y versiones del prompt, fotos del agente, campos de la ficha, equipos,
+  herramientas, base de conocimiento, saldo) y para los canales y las redes (Instagram, la página
+  de Facebook y la de LinkedIn: publicar, programar, comentarios y métricas). Dos de ellas traen el contrato completo y
   siempre al día: `get_flow_schema` y `get_agent_schema`.
-- **Cinco skills**, que Claude aplica cuando reconoce lo que pides:
+- **Seis skills**, que Claude aplica cuando reconoce lo que pides:
 
   | Skill | Cuándo se dispara |
   |---|---|
@@ -18,6 +20,7 @@ directamente desde Claude, vía un servidor **MCP remoto** protegido con **OAuth
   | `crear-agente` | "quiero un bot con inteligencia artificial", "crea un agente de IA", "que la IA agende las citas", "qué puede hacer la IA de FlujosChat" |
   | `actualizar-agente` | "mi agente responde mal", "cámbiale el tono", "conéctale la agenda", "revisa mi agente", "desactívalo" |
   | `crear-equipo` | "arma un equipo con ventas y soporte", "que recepción derive", "pásalo a modo supervisor", "valida mi equipo" |
+  | `publicar-en-redes` | "publica esto en Instagram", "programa un post en Facebook", "comparte esto en LinkedIn", "responde a los comentarios", "cómo le fue a mi último post" |
 
 - **Un subagente**, `auditor-agente-ia`: revisa un agente o un equipo en modo solo lectura y
   devuelve hallazgos con el cambio propuesto. No escribe nada y no gasta saldo.
@@ -62,8 +65,13 @@ backend + `/api/v1/mcp`. El servidor publica su metadata OAuth en:
 ## Permisos
 
 - Scopes: `flows:read` / `flows:write` para flujos; `agents:read` / `agents:write` para todo el
-  módulo de IA (agentes, equipos, herramientas, conocimiento, saldo). Los apruebas en la pantalla
-  de consentimiento al conectar.
+  módulo de IA (agentes, equipos, herramientas, conocimiento, saldo); `instagram:read` /
+  `instagram:write`, `facebook:read` / `facebook:write` y `linkedin:read` / `linkedin:write` para
+  publicar, comentarios y métricas en cada red. Los apruebas en la pantalla de consentimiento al
+  conectar. Si conectaste el plugin antes de que existieran los de las redes, vuelve a conectarlo
+  (`/mcp`) para concederlos.
+- Publicar en las redes no gasta saldo de IA, pero es público: el skill enseña el texto, los
+  medios y la hora y espera tu sí antes de publicar.
 - Escribir exige además **rol OWNER o ADMIN** en FlujosChat y una suscripción activa. Ver el saldo
   (`get_ai_balance`) también exige OWNER o ADMIN.
 
@@ -90,7 +98,8 @@ backend + `/api/v1/mcp`. El servidor publica su metadata OAuth en:
 | Qué | Dónde |
 |---|---|
 | Credenciales de una herramienta HTTP o MCP, y la clave compartida de una herramienta Apps Script | `/dashboard/ai/tools` → ficha de la herramienta |
-| Activar una capacidad integrada (agenda, botones, ficha del cliente, flujos y las de Google: Calendar, Gmail, Sheets y Drive) | `/dashboard/ai/tools` → capacidad del sistema |
+| Los ajustes de cada capacidad integrada (agenda, botones, ficha del cliente, flujos, fotos y las de Google: Calendar, Gmail, Sheets, Drive, Directorio y Contactos). Encenderla también se puede desde Claude | `/dashboard/ai/tools` → capacidad del sistema |
+| Conectar Instagram, la página de Facebook (Messenger) o la página de empresa de LinkedIn | Ajustes → Instagram, Ajustes → Messenger, Ajustes → Integraciones → LinkedIn |
 | Conectar tu cuenta de Google y elegir las hojas, documentos y carpetas que usa el agente | Configuración → Integraciones → Google |
 | Permitir que la IA escriba al cliente por correo | Configuración → Personalizar panel |
 | Subir archivos a la base de conocimiento | `/dashboard/ai/knowledge` |

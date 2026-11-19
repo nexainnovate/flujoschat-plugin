@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.4.0 — 2026-11-19
+
+Las redes sociales y las tools que el servidor ya exponía y el plugin no enseñaba. El
+comprobador del servidor (`npm run check:plugin`) marcaba 41 tools sin enseñar y 4 capacidades
+integradas sin mencionar.
+
+- **Nuevo skill `publicar-en-redes`**: publicar y programar en Instagram, en la página de
+  Facebook y en la página de empresa de LinkedIn; ver, cambiar y cancelar la cola; responder,
+  ocultar (Instagram, Facebook) o borrar (LinkedIn) comentarios; métricas. Con la puerta de
+  acuerdo antes de todo lo público, las diferencias por red (LinkedIn sin `accountId`, sin cambio
+  de programadas y sin «ocultar»; el planificador de Meta en Facebook; Instagram no se borra por la
+  API), el formato `[CODIGO] texto` de sus errores y qué hacer con cada uno, incluida la regla de
+  no repetir una publicación incierta sin mirar la página.
+- **Nuevo** en `editar-flujo`: los pasos y las transiciones se editan uno a uno
+  (`add_flow_step`, `update_flow_step`, `delete_flow_step`, `add_flow_transition`,
+  `update_flow_transition`, `delete_flow_transition`).
+- **Nuevo** en `actualizar-agente`: el prompt con borrador, diff y publicación
+  (`list_agent_prompt_versions`, `save_agent_prompt_draft`, `diff_agent_prompt`,
+  `publish_agent_prompt`, también para volver a una versión anterior), y `addToolIds` /
+  `removeToolIds`.
+- **Nuevo** en `crear-agente`, `actualizar-agente` y el catálogo: las fotos que envía el agente
+  (`upload_agent_image`, `list_agent_images`, `imageAttachments` y la capacidad `imagenes`) y los
+  campos de la ficha del cliente (`list_custom_fields`, `create_custom_field`).
+- **Nuevo** en el catálogo: las capacidades `google_calendar_dueno` (agenda completa solo para los
+  números del dueño), `google_directorio` (Directorio de Workspace) y `google_contactos`
+  (Contactos de Google). Ahora son dieciséis capacidades integradas, once de Google.
+- **Corregido**: `editar-flujo` decía que el MCP no edita pasos uno a uno.
+- **Corregido**: `crear-agente`, `actualizar-agente` y el catálogo decían que una capacidad
+  integrada solo se activa en el panel. Se enciende también por MCP con `create_ai_tool` (tipo
+  `BUILTIN`); sus ajustes siguen en el panel. Y los campos personalizados se pueden crear por MCP
+  (no editar ni borrar).
+- README: 88 tools, el sexto skill, los scopes `instagram:*`, `facebook:*` y `linkedin:*` (hay que
+  reconectar el servidor para concederlos) y dónde se conecta cada red.
+
+Verificado contra el servidor de FlujosChat (repo `chatboxabel`, `master` con LinkedIn fase 3) con
+`npm run check:plugin`. Los códigos de error de las redes que no salen en las descripciones de las
+tools están tomados del código de los módulos de contenido, que el comprobador no lee.
+
 ## 1.3.2 — 2026-11-10
 
 - **Nuevo**: el campo `channels` de un flujo (`WHATSAPP`, `INSTAGRAM`, `TELEGRAM`, `TIKTOK`,

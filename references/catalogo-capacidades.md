@@ -25,16 +25,20 @@ los publica el servidor en `get_agent_schema`, y ahí siempre están al día.
 | llame a un Google Apps Script mío (una hoja o un proceso que ya automaticé con Apps Script) | Herramienta `APPS_SCRIPT` | Aquí: `create_ai_tool` de tipo `APPS_SCRIPT` con `execUrl` (la dirección de la implementación como aplicación web, la que termina en `/exec`), `action` (la acción que despacha el script) y `params`. La clave compartida la pone el dueño SOLO en el panel (`/dashboard/ai/tools`): creada por aquí, la herramienta queda sin clave y el script la rechazará hasta entonces. El script tiene que estar implementado con acceso para cualquiera. | No gasta saldo de IA; el script corre de verdad | F25 |
 | agende, mueva o cancele citas reales | Capacidad integrada **agenda** (consultar horarios libres, agendar, reprogramar, cancelar) | Panel: Agentes IA → Herramientas → capacidad del sistema; requiere la agenda del negocio configurada (horario, cupo, profesionales). Luego se ata al agente con `toolIds`. | No | F1, F10 |
 | responda con botones tocables | Capacidad integrada **botones** (hasta 3 opciones cerradas por mensaje) | Panel; luego `toolIds`. Es la única capacidad que también funciona en la demostración pública. | No | F1, F2 |
-| guarde nombre, documento, correo en la ficha del cliente | Capacidad integrada **contacto** (rellena campos personalizados que ya existen) | Panel; requiere campos personalizados creados. No crea campos. Luego `toolIds`. | No | F1 |
+| guarde nombre, documento, correo en la ficha del cliente | Capacidad integrada **contacto** (rellena campos personalizados que ya existen) | Aquí (`create_ai_tool`, tipo `BUILTIN`) o en el panel; requiere campos personalizados creados: el agente no los crea, pero tú sí, con `list_custom_fields` y `create_custom_field` (no se editan ni se borran por este canal). Luego `toolIds`. | No | F1, F31 |
+| envíe fotos del negocio (catálogo, ubicación, cómo pagar) cuando toque | Capacidad integrada **imagenes** (consulta las fotos de ese agente y adjunta hasta 3 por turno; no genera imágenes) | Aquí: sube cada foto con `upload_agent_image` (JPG o PNG) o reutiliza una de `list_agent_images`, y ponla en `imageAttachments` del agente con un nombre y CUÁNDO enviarla. La capacidad se enciende con `create_ai_tool` (`BUILTIN`) y se ata con `toolIds`: sin ella las fotos se guardan pero no salen. | No | F32 |
 | recomiende y arranque uno de mis flujos de WhatsApp | Capacidad integrada **flujos** (lista los flujos, incluidos los apagados, y arranca el elegido en la misma conversación) | Panel; luego `toolIds`. El agente elige por la descripción de cada flujo: un flujo sin descripción es invisible para él. | No | F1 |
 | consulte el Google Calendar del negocio (qué calendarios hay, qué horas están ocupadas) | Capacidad integrada **google_calendar** | Panel: el dueño conecta su cuenta en Configuración → Integraciones → Google y activa la capacidad; luego `toolIds`. Buscar los EVENTOS con su título es un permiso aparte (lo cubre también el de escritura): sin ninguno de los dos, esa función avisa y las otras siguen. | Solo lo que gasta el turno del modelo | F21 |
 | cree, mueva o cancele eventos en ese calendario | Capacidad integrada **google_calendar_editar** | Panel; exige el permiso de escritura de Calendar. ⚠️ Trae SOLO crear, mover y cancelar: para mirar las horas libres antes de proponer, o para localizar el id del evento que hay que mover, el agente necesita además `google_calendar`. Casi siempre se atan las dos. | Solo el turno | F21 |
+| le diga al DUEÑO por WhatsApp qué tiene agendado ("¿qué tengo mañana?") | Capacidad integrada **google_calendar_dueno** (lista el calendario ENTERO) | Panel: lo mismo que google_calendar, el permiso de ver eventos en la conexión y al menos un número en Configuración → Integraciones → Google → "Números del dueño". A cualquier otro número se niega. En una prueba con `run_team` sí lista. | Solo el turno | F33 |
 | avise por CORREO a mi equipo desde mi Gmail | Capacidad integrada **google_gmail_enviar** (una sola función: asunto y mensaje) | Panel: hasta 5 direcciones en Configuración → Personalizar panel. El agente no elige destinatario —escribe a esa lista entera y a nadie más—, y no puede repetir aviso en la misma conversación antes de 10 minutos. ⚠️ Necesita el permiso de envío de Gmail, que Google tiene que aprobar para FlujosChat: mientras no lo apruebe, Gmail sale pendiente en la conexión y no se envía nada. | Solo el turno | F22 |
 | le mande al CLIENTE con el que habla un correo (un resumen, una cotización en texto) | Capacidad integrada **google_gmail_escribir_cliente** (una sola función: asunto y mensaje) | Panel: en Configuración → Personalizar panel hay que encender "Permitir que la IA escriba al cliente por correo", tener al menos un correo en "Avisos al equipo" (reciben copia oculta de cada correo; sin ellos no sale ninguno) y un campo personalizado de tipo correo. El agente NO elige la dirección: usa la de la ficha del cliente, y solo si la guardó una persona desde el panel o un sistema por la API (una que el cliente le dictó al agente no vale hasta que un asesor la confirme). Solo texto, sin enlaces; como mucho 50 correos al día por empresa y uno cada 10 minutos por conversación. ⚠️ Depende del mismo permiso de envío de Gmail. | Solo el turno | F26 |
 | anote una fila en una hoja de cálculo mía (un interesado, un pedido) | Capacidad integrada **google_sheets_anotar** | Panel: eliges las hojas con el selector de Google en Configuración → Integraciones → Google. Solo escribe en esas; si no eliges ninguna, no escribe en ninguna parte. Una fila por turno, hasta 26 valores; escribe al final de la PRIMERA pestaña (no se puede elegir otra) y el agente ve las 10 primeras hojas autorizadas. | Solo el turno | F23 |
 | busque un pedido o un cliente en una hoja de cálculo mía y responda con lo que dice | Capacidad integrada **google_sheets_consultar** (ver las hojas, listar sus pestañas, buscar filas por texto y leer un tramo de filas) | Panel: trabaja sobre las MISMAS hojas elegidas en Configuración → Integraciones → Google. Solo lee: busca en las primeras 2000 filas y las columnas A–Z de cada pestaña, y lee como mucho 50 filas seguidas. ⚠️ Puede leer cualquier fila que coincida con lo que pregunte, sea de quien sea: entrégale hojas preparadas para que las vea un cliente. | Solo el turno | F27 |
 | cambie un dato de una fila que ya existe (el estado de un pedido, la dirección de entrega) | Capacidad integrada **google_sheets_actualizar** (una sola función: modificar celdas de una fila) | Panel, y siempre JUNTO con google_sheets_consultar en el mismo agente: la fila y su huella salen de la búsqueda. Solo cambia las columnas cuyo título, en la propia hoja, termina en "(editable)" (sin ninguna marcada no cambia nada), nunca la fila de los títulos, y una fila por turno; lo que había en esas celdas se pierde. ⚠️ No hay autorización por cliente: puede modificar cualquier fila que encuentre, así que la columna que identifica al cliente (teléfono, DNI, correo) NO se marca como editable. | Solo el turno | F28 |
 | responda con lo que dicen mis documentos de Google Drive (manuales, catálogos, políticas) | Capacidad integrada **google_drive_buscar** (listar lo elegido y leer un documento por páginas) | Panel: eliges documentos y carpetas con el selector de Drive en Configuración → Integraciones → Google. Lee esos documentos y los que están DIRECTAMENTE dentro de esas carpetas (los de sus subcarpetas no); Documentos, Presentaciones y Hojas de Google (de una hoja, solo la primera pestaña), PDF, txt, md y csv, por páginas de 4000 caracteres y hasta 200 000 por documento. Solo lee. | Solo el turno | F29 |
+| sepa quién de mi organización se encarga de algo, para derivar | Capacidad integrada **google_directorio** (busca empleados en el Directorio de Google Workspace: nombre, correo de trabajo, cargo y área) | Panel: conexión de Google WORKSPACE (no vale una cuenta @gmail.com) con el Directorio activo. Solo lo que el dominio ya comparte entre empleados, nunca teléfonos ni direcciones; hasta 10 resultados. Lo que encuentra puede acabar en su respuesta al cliente. | Solo el turno | F34 |
+| reconozca a quien escribe porque está en mis contactos de Google | Capacidad integrada **google_contactos** (busca por nombre, correo, teléfono o empresa) | Panel: conexión de Google (vale @gmail.com) con Contactos activo. De cada contacto ve solo nombre y empresa, y cuál tiene el mismo teléfono que el cliente (no prueba que sea la misma persona); nunca teléfonos, correos, direcciones ni notas. Hasta 10 resultados. | Solo el turno | F34 |
 | pase la conversación a una persona | Derivar a humano | Automático en todo agente: no se registra nada. En el prompt va solo el CRITERIO de cuándo hacerlo y qué decirle al cliente. | No | F6 |
 | avise por WhatsApp a mi equipo cuando derive | Aviso al equipo | Panel: Configuración → Personalizar panel → Avisos al equipo (lista de celulares). Va como texto libre, así que cada celular debe haberle escrito al bot en las últimas 24 horas; si falla, el panel lo muestra. | No | F11 |
 | salude por su nombre y conozca sus datos | Variables del prompt | En las instrucciones: `{{cliente.nombre}}`, `{{cliente.telefono}}`, `{{campo.<slug>}}`. Reglas en `get_agent_schema` y en `buenas-practicas-prompt.md`. | No | F16 |
@@ -49,7 +53,7 @@ los publica el servidor en `get_agent_schema`, y ahí siempre están al día.
 
 ## Antes de ofrecer las capacidades de Google
 
-Las ocho se apoyan en cuentas de Google que conecta el DUEÑO en Configuración →
+Las once se apoyan en cuentas de Google que conecta el DUEÑO en Configuración →
 Integraciones → Google, no en una credencial por agente. Lo que conviene decirle antes de que
 elija:
 
@@ -88,11 +92,12 @@ elija:
   lee tal cual están en Drive, sin indexarlos, pero con un tope de consultas a Drive por turno y
   página a página desde el principio. Importar conviene cuando el dato hay que encontrarlo dentro
   de muchos documentos; leer en vivo, cuando son pocos y cortos. [F29, F30]
-- **Ninguna de las ocho funciona en la demostración pública** de un equipo: tocan la cuenta
+- **Ninguna de las once funciona en la demostración pública** de un equipo: tocan la cuenta
   real de un tercero. En una prueba (desde el panel o con `run_team`) el corte es por
   HERRAMIENTA, no por capacidad: las que escriben o envían se niegan («estás en una prueba») y las
-  que solo leen —las consultas de google_calendar, google_sheets_consultar, google_drive_buscar y
-  la lista de hojas de google_sheets_anotar— se ejecutan de verdad contra Google. [F24]
+  que solo leen —las consultas de google_calendar y google_calendar_dueno, google_sheets_consultar,
+  google_drive_buscar, google_directorio, google_contactos y la lista de hojas de
+  google_sheets_anotar— se ejecutan de verdad contra Google. [F24, F33, F34]
 
 ## Lo que la plataforma hace sola (no lo pongas en el prompt)
 
@@ -111,7 +116,7 @@ elija:
 | Qué | Dónde |
 |---|---|
 | Credenciales de una herramienta HTTP o MCP, y la clave compartida de una herramienta Apps Script | `/dashboard/ai/tools` → ficha de la herramienta |
-| Activar una capacidad integrada (agenda, botones, contacto, flujos y las ocho de Google) | `/dashboard/ai/tools` → capacidad del sistema |
+| Ajustes de cada capacidad integrada (la agenda, las hojas y documentos elegidos, los números del dueño, los correos de aviso). Encenderla también se puede aquí, con `create_ai_tool` (`BUILTIN`) | `/dashboard/ai/tools` → capacidad del sistema, y la pantalla de cada ajuste |
 | Conectar la cuenta de Google del negocio y activar cada servicio | Configuración → Integraciones → Google |
 | Elegir las hojas de cálculo (para anotar, consultar y modificar) y los documentos y carpetas de Drive que puede usar el agente | Configuración → Integraciones → Google |
 | Marcar qué columnas de una hoja puede modificar el agente | En la propia hoja de Google: el título de la columna termina en "(editable)" |
@@ -123,7 +128,7 @@ elija:
 | Clave o proveedor propio (por empresa o por agente) | `/dashboard/ai/config` y ficha del agente en `/dashboard/ai/agents` |
 | Demostración pública de un equipo | `/dashboard/ai/teams` → Compartir demo |
 | Aviso por WhatsApp al equipo al derivar | Configuración → Personalizar panel → Avisos al equipo |
-| Campos personalizados (para la ficha y las variables) | Ajustes → Campos personalizados |
+| Editar o borrar campos personalizados (crearlos se puede aquí con `create_custom_field`) | Ajustes → Campos personalizados |
 | Configurar la agenda del negocio | `/dashboard/agenda` |
 | Conectar el equipo a un flujo existente (paso `AI_HANDOFF`) | Editor visual de flujos |
 
@@ -137,7 +142,8 @@ elija:
   la dirección de la ficha guardada desde el panel o por la API. [F26]
 - Que el agente modifique una columna que el dueño no marcó como editable, o borre filas. [F28]
 - Que el agente lea las subcarpetas de una carpeta de Drive elegida o siga un acceso directo. [F29]
-- Crear una capacidad integrada por este canal: se activa en el panel y luego se ata. [F1]
+- Configurar una capacidad integrada por este canal (la agenda, las hojas elegidas, los números
+  del dueño…): se enciende aquí con `create_ai_tool`, pero sus ajustes se ponen en el panel. [F1]
 - Ajustar "temperatura" o "creatividad" del modelo: no existe ese ajuste. Se gobierna con las
   instrucciones y con el modelo elegido. [F19]
 - Que el modelo sepa la hora: solo conoce el día. Las horas reales llegan por la agenda. [F5]
@@ -149,7 +155,7 @@ elija:
 
 | Ref | Qué respalda | Archivo (repo chatboxabel) | Fecha |
 |---|---|---|---|
-| F1 | Catálogo de las 12 capacidades integradas, prerrequisitos, cuál funciona en demo | `backend/src/modules/ai/tools/builtin-catalog.js`, `backend/src/modules/mcp/agent-schema.js` | 2026-09-13 |
+| F1 | Catálogo de las 16 capacidades integradas (11 de Google), prerrequisitos, cuál funciona en demo | `backend/src/modules/ai/tools/builtin-catalog.js`, `backend/src/modules/mcp/agent-schema.js` | 2026-09-13 |
 | F2 | Límites de los botones | `backend/src/modules/ai/tools/buttons-tools.js` | 2026-09-05 |
 | F5 | Bloque de fecha sin hora | `backend/src/modules/ai/runtime/fecha-actual.js` | 2026-09-05 |
 | F6 | Derivar a humano automático | `backend/src/modules/ai/tools/builtin-tools.js` | 2026-09-05 |
@@ -176,3 +182,7 @@ elija:
 | F28 | Sheets modificar: columnas "(editable)", huella, una fila por turno, sin autorización por cliente | `backend/src/modules/ai/tools/google-sheets-actualizar-tools.js`, `backend/src/modules/mcp/agent-schema.js` | 2026-09-13 |
 | F29 | Drive leer: lo elegido y sus hijos directos, páginas de 4000, 200 000 por documento, primera pestaña de una hoja | `backend/src/modules/ai/tools/google-drive-tools.js`, `backend/src/modules/mcp/agent-schema.js` | 2026-09-13 |
 | F30 | Importar de Drive a la base de conocimiento, re-sincronización y retirada del índice | `backend/src/modules/integrations/google/google-drive-import.js`, `docs/referencia/base-conocimiento.md` | 2026-09-13 |
+| F31 | Campos de la ficha por MCP: listar y crear, no editar ni borrar | `backend/src/modules/mcp/tools/ai.tools.js` (`list_custom_fields`, `create_custom_field`) | 2026-11-19 |
+| F32 | Fotos del agente: subir, reutilizar, `imageAttachments` y la capacidad imagenes | `backend/src/modules/mcp/tools/ai.tools.js`, `backend/src/modules/ai/tools/image-tools.js`, `backend/src/modules/mcp/agent-schema.js` | 2026-11-19 |
+| F33 | Agenda completa solo para los números del dueño | `backend/src/modules/ai/tools/google-calendar-tools.js`, `backend/src/modules/ai/tools/builtin-catalog.js` | 2026-11-19 |
+| F34 | Directorio de Workspace y Contactos de Google: qué devuelven y qué nunca | `backend/src/modules/ai/tools/google-directory-tools.js`, `backend/src/modules/ai/tools/google-contacts-tools.js`, `backend/src/modules/mcp/agent-schema.js` | 2026-11-19 |

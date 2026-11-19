@@ -75,8 +75,9 @@ Llama a la tool de la red y lee la respuesta:
   - **Instagram**: FlujosChat, hasta 60 días por delante.
   - **Facebook**: si es `TEXT`, `IMAGE` o `ALBUM` y la hora cae entre 15 minutos y 29 días, queda
     en el **planificador de Meta** (se ve en Business Suite y Meta la publica aunque FlujosChat no
-    esté): la respuesta trae `programadaEnMeta` en verdadero. Un Reel u otra hora la publica
-    FlujosChat (hasta 60 días).
+    esté): la respuesta trae `programadaEnMeta` en verdadero. Un Reel, o una hora a menos de 15
+    minutos, la publica FlujosChat. Un `TEXT`, `IMAGE` o `ALBUM` a más de 29 días espera en
+    FlujosChat y pasa solo al planificador de Meta cuando entra en ese margen (hasta 60 días).
   - **LinkedIn** no tiene programación propia: la publica FlujosChat a su hora, hasta 60 días.
 
 Si el dueño quiere la misma publicación en varias redes, son llamadas separadas, y cada una pasa
@@ -149,9 +150,10 @@ Los demás códigos vienen de la conexión con cada red y se reconocen por el pr
 
 - **Cuenta o página equivocada** (INSTAGRAM_ACCOUNT_NOT_FOUND, FACEBOOK_ACCOUNT_NOT_FOUND): vuelve
   a `list_connected_channels` y usa su `id`.
-- **Conexión o permiso** (INSTAGRAM_TOKEN_INVALID, INSTAGRAM_PERMISSION_MISSING,
-  INSTAGRAM_FALTAN_PERMISOS, INSTAGRAM_VIA_NO_SOPORTADA, INSTAGRAM_CUENTA_PAUSADA y sus
-  equivalentes FACEBOOK_…; en LinkedIn LINKEDIN_NOT_CONNECTED, LINKEDIN_NO_PAGE,
+- **Conexión o permiso** (Instagram: INSTAGRAM_TOKEN_INVALID, INSTAGRAM_PERMISSION_MISSING,
+  INSTAGRAM_FALTAN_PERMISOS, INSTAGRAM_VIA_NO_SOPORTADA, INSTAGRAM_CUENTA_PAUSADA; Facebook:
+  FACEBOOK_TOKEN_INVALID, FACEBOOK_PERMISSION_MISSING, FACEBOOK_FALTAN_PERMISOS,
+  FACEBOOK_CUENTA_PAUSADA; LinkedIn: LINKEDIN_NOT_CONNECTED, LINKEDIN_NO_PAGE,
   LINKEDIN_RECONNECT): el dueño tiene que conectar, reconectar aceptando todos los permisos o
   reanudar la cuenta. `get_channel_connect_link` le da el enlace (LinkedIn: Ajustes →
   Integraciones → LinkedIn). Una cuenta de Instagram conectada con "Instagram Login" no publica:

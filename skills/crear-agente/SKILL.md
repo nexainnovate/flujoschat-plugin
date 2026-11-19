@@ -23,8 +23,12 @@ suscripción activa. Lo que gasta saldo de IA se anuncia antes de hacerlo.
 2. Inventario: `list_agents`, `list_ai_tools`, `list_knowledge_categories`, `list_teams`.
    - Si ya hay un agente con ese nombre o ese trabajo, propón `actualizar-agente`.
    - Anota las filas de tipo `BUILTIN` (capacidades integradas: agenda, botones, contacto,
-     flujos y las de Google) con su id: son las que el dueño ya activó en el panel. Las que no
-     estén NO se crean por este canal.
+     flujos, imágenes y las de Google) con su id: son las que ya están encendidas. Las que
+     falten se encienden en la puerta 1 con `create_ai_tool` (tipo `BUILTIN`, `config` con la
+     clave del catálogo en `builtin`), pero sus ajustes (la agenda, las hojas elegidas, los
+     números del dueño…) siguen en el panel.
+   - `list_custom_fields` (campos de la ficha del cliente) y, si el agente va a enviar fotos,
+     `list_agent_images`.
 3. `get_ai_balance`: te da el modo de IA (incluida o clave propia) y el saldo. Si responde que
    requiere rol OWNER o ADMIN, este usuario tampoco podrá crear nada: dilo ahora y ofrece
    entregar el prompt en texto para que lo pegue un administrador. `get_ai_config` solo enseña
@@ -63,13 +67,22 @@ Antes de seguir: cada capacidad elegida está en `list_ai_tools` (integrada), se
   `params` como lista de definiciones de argumentos (el esquema lo explica); NUNCA una credencial
   ni la clave compartida de un Apps Script, ni en `config` ni en cabeceras: se añade en el panel
   después. Empieza por herramientas de solo lectura.
-- **Capacidades integradas:** solo se atan con `toolIds` si ya existen como fila. Comprueba sus
+- **Capacidades integradas:** se atan con `toolIds`; si no existen como fila, se encienden en la
+  puerta 1 con `create_ai_tool` (`BUILTIN`). Comprueba sus
   prerrequisitos en `get_agent_schema` (agenda configurada, campos personalizados, flujos con
   descripción, cuenta de Google conectada con sus hojas o documentos elegidos). Dos reglas de
   combinación: `google_sheets_actualizar` sin `google_sheets_consultar` no tiene de dónde sacar la
   fila; y `google_gmail_escribir_cliente` no se ata a un agente que lee datos de otros clientes
   (hojas, Drive), porque lo que lee puede acabar en el correo.
-- **Variables:** pide los nombres exactos de los campos personalizados y conviértelos a slug.
+- **Variables y ficha:** `list_custom_fields` da los campos y su marcador (el nombre pasado a
+  slug: «Edad del paciente» es `{{campo.edad_del_paciente}}`). Si el prompt o la capacidad
+  `contacto` necesitan uno que no existe, `create_custom_field` lo crea en la puerta 1; por aquí
+  no se edita ni se borra, así que revisa nombre y tipo con el dueño.
+- **Fotos que envía el agente** (catálogo, ubicación, cómo pagar): reutiliza las de
+  `list_agent_images` o sube cada una con `upload_agent_image` (JPG o PNG, en base64 o con una
+  `sourceUrl` pública); van en `imageAttachments` del agente con un nombre y la indicación de
+  CUÁNDO mandarla, y hace falta la capacidad `imagenes` atada: sin ella se guardan pero no
+  salen.
 - **Modelo:** `null` (el default de la empresa) salvo motivo. Solo los modelos que lista el
   esquema; con la IA incluida, otro se cambia por el default sin avisar.
 - **`handoffDescription`:** solo si va a recibir derivaciones dentro de un equipo. Tercera
@@ -91,10 +104,12 @@ o catálogo (van a conocimiento), direcciones o claves (van a herramientas).
 Muestra la lista: herramientas (nombre, dirección, argumentos), categorías, documentos (título y
 tamaño) y el aviso "indexar N documentos gasta saldo". Espera un sí explícito. Luego, en orden:
 
-1. `create_ai_tool` y, si el dueño quiere probarla, `test_ai_tool` avisando de que una
+1. Lo que falte de lo anterior: capacidades integradas (`create_ai_tool` con `BUILTIN`),
+   campos de la ficha (`create_custom_field`) y fotos (`upload_agent_image`).
+2. `create_ai_tool` de las herramientas HTTP, MCP o `APPS_SCRIPT` y, si el dueño quiere probarla, `test_ai_tool` avisando de que una
    herramienta HTTP o Apps Script se ejecuta de verdad (una MCP solo lista sus funciones).
-2. `create_knowledge_category` y `create_knowledge_document` (texto plano).
-3. `list_knowledge_documents` hasta ver el documento listo: nace pendiente, no lo des por listo.
+3. `create_knowledge_category` y `create_knowledge_document` (texto plano).
+4. `list_knowledge_documents` hasta ver el documento listo: nace pendiente, no lo des por listo.
 
 Si una herramienta necesita credencial (o, si es un Apps Script, su clave compartida): créala sin
 ella, di al dueño que la añada en

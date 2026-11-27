@@ -20,7 +20,8 @@ suscripción activa. Lo que gasta saldo de IA se anuncia antes de hacerlo.
 ## 0. Antes de empezar (no se salta)
 
 1. Llama a `get_agent_schema`. Siempre, en esta conversación, aunque creas recordarlo.
-2. Inventario: `list_agents`, `list_ai_tools`, `list_knowledge_categories`, `list_teams`.
+2. Inventario: `list_agents`, `list_ai_tools`, `list_knowledge_categories`, `list_teams` y,
+   si el agente va a usar datos del cliente, `list_custom_fields`.
    - Si ya hay un agente con ese nombre o ese trabajo, propón `actualizar-agente`.
    - Anota las filas de tipo `BUILTIN` (capacidades integradas: agenda, botones, contacto,
      flujos, imágenes y las de Google) con su id: son las que ya están encendidas. Las que
@@ -52,8 +53,9 @@ FILTRADO para su negocio: 5 a 8 líneas, en lenguaje de cliente, sin nombres de 
 cada una con qué logra · dónde se activa (aquí o en el panel) · si gasta saldo. Pregunta cuáles
 quiere para este agente. Con eso, haz la ronda 2 del cuestionario.
 
-Antes de seguir: cada capacidad elegida está en `list_ai_tools` (integrada), se va a crear aquí
-(HTTP, MCP o `APPS_SCRIPT`) o queda anotada como pendiente del panel con su enlace.
+Antes de seguir: cada capacidad elegida ya está en `list_ai_tools` o se va a crear aquí
+(integrada, HTTP, MCP o `APPS_SCRIPT`), y lo que solo se configura en el panel (horario de la
+agenda, hojas elegidas, conexión de Google, credenciales) queda anotado como pendiente con su enlace.
 
 ## 3. Diseñar antes de escribir
 
@@ -67,10 +69,13 @@ Antes de seguir: cada capacidad elegida está en `list_ai_tools` (integrada), se
   `params` como lista de definiciones de argumentos (el esquema lo explica); NUNCA una credencial
   ni la clave compartida de un Apps Script, ni en `config` ni en cabeceras: se añade en el panel
   después. Empieza por herramientas de solo lectura.
-- **Capacidades integradas:** se atan con `toolIds`; si no existen como fila, se encienden en la
-  puerta 1 con `create_ai_tool` (`BUILTIN`). Comprueba sus
-  prerrequisitos en `get_agent_schema` (agenda configurada, campos personalizados, flujos con
-  descripción, cuenta de Google conectada con sus hojas o documentos elegidos). Dos reglas de
+- **Capacidades integradas:** se atan con `toolIds`; si no existe la fila, se enciende antes con
+  `create_ai_tool` (tipo `BUILTIN`, `config` con la clave del catálogo en `builtin`); hay una por
+  empresa y la comparten todos los agentes. Comprueba sus prerrequisitos en `get_agent_schema`
+  (agenda configurada, campos personalizados, flujos con descripción, cuenta de Google conectada
+  con sus hojas o documentos elegidos): encenderla no configura nada de eso. Para un servidor MCP,
+  decide con `allowedTools` qué funciones ve el agente. Catálogo completo y cómo usarlas bien:
+  `${CLAUDE_PLUGIN_ROOT}/references/catalogo-capacidades.md`. Dos reglas de
   combinación: `google_sheets_actualizar` sin `google_sheets_consultar` no tiene de dónde sacar la
   fila; y `google_gmail_escribir_cliente` no se ata a un agente que lee datos de otros clientes
   (hojas, Drive), porque lo que lee puede acabar en el correo.
@@ -95,7 +100,10 @@ categorías, documentos) completas.
 
 Lee `${CLAUDE_PLUGIN_ROOT}/references/buenas-practicas-prompt.md` (obligatorio) y elige una
 base en `${CLAUDE_PLUGIN_ROOT}/references/plantillas-prompt.md`. Escribe el prompt completo y
-pásalo por la checklist final de la guía antes de mostrarlo. No pongas: la fecha o la hora (la
+pásalo por la checklist final de la guía antes de mostrarlo. Si el tono o el contexto cambian
+según un dato del cliente, usa condiciones (`{{#if campo.x == "valor"}}` o `{% if … %}`, § 6 bis
+de la guía), nunca para conceder algo. Si el dueño trae un prompt escrito en Jinja, sigue el
+apartado "Si vienes de Jinja" de esa sección. No pongas: la fecha o la hora (la
 plataforma añade la fecha sola), definiciones de las herramientas (llegan con la suya), precios
 o catálogo (van a conocimiento), direcciones o claves (van a herramientas).
 
@@ -138,7 +146,8 @@ y la lista de pendientes del panel.
 - Probarlo es `run_team` sobre un equipo: gasta saldo y ejecuta de verdad las herramientas HTTP
   y Apps Script y las consultas a Google (calendarios, hojas, Drive). Se ofrece, nunca se lanza
   sin acuerdo. En la prueba las variables salen como `(sin dato)` y
-  las capacidades integradas dicen que están en una prueba: es lo esperado.
+  las capacidades integradas que escriben (citas, ficha, flujos, hojas, correos) dicen que están en
+  una prueba: es lo esperado.
 - Pendientes del panel, con enlaces: credenciales, capacidades integradas no activadas, subida de
   archivos, aviso por WhatsApp al equipo al derivar, demostración pública, clave propia.
 
@@ -162,11 +171,12 @@ Tabla de fragmento de error → qué hacer, y qué gasta saldo:
 - "Quiero un bot que responda dudas de mis productos" → paso 0 → ronda 1 → menú (conocimiento,
   botones, ficha) → ronda 2 → documentos en texto → puerta 1 → prompt → puerta 2 →
   `create_agent` → ofrecer equipo y flujo.
-- "Que agende citas" → en `list_ai_tools` busca la capacidad de agenda; si no está, primero el
-  panel (activarla y configurar la agenda); luego `toolIds` y la política de agenda en el prompt.
+- "Que agende citas" → en `list_ai_tools` busca la capacidad de agenda; si no está, se enciende
+  en la puerta 1; el horario y los profesionales se configuran en el panel; `toolIds` del agente
+  con ella y la política de agenda en el prompt.
 - "Que busque el pedido en mi hoja de Google" → en `list_ai_tools` busca `google_sheets_consultar`;
-  si no está, primero el panel (conectar Google, elegir la hoja, activar la capacidad); luego
-  `toolIds` y, en el prompt, por qué dato buscar y que no le dé a nadie datos de otras filas.
+  si no está, se enciende en la puerta 1, y en el panel se conecta Google y se elige la hoja;
+  luego `toolIds` y, en el prompt, por qué dato buscar y que no le dé a nadie datos de otras filas.
 - "Conéctalo a mi API de pedidos" → `create_ai_tool` de solo lectura sin credencial →
   `test_ai_tool` con aviso → el dueño pone la clave en el panel → política en el prompt.
 - "Usa el modelo más potente" → modo con `get_ai_balance` y lista del esquema; avisa el coste;

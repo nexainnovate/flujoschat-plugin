@@ -1,5 +1,52 @@
 # Changelog
 
+## 1.5.0 — 2026-11-26
+
+Cómo escribir un buen prompt y cómo conectar bien las herramientas. Es lo del PR #7, que se había
+quedado sin mergear, puesto al día con la 1.4.0 y vuelto a verificar contra el servidor.
+
+- **Nuevo** en `references/buenas-practicas-prompt.md`:
+  - § 6 bis, **condiciones** en sus dos formas, `{{#if}}` / `{{else if}}` / `{{else}}` / `{{/if}}`
+    y `{% if %}` / `{% elif %}` / `{% else %}` / `{% endif %}`, con `and`, `or`, `not`, paréntesis,
+    comillas simples o dobles y `true` / `false`. Sirven para tono y contexto, nunca para conceder
+    algo, y en `run_team` toda condición es falsa.
+  - Comentarios `{# … #}` (notas que el modelo no lee) y el valor de reserva
+    `{{campo.x|default("…")}}`, con cuándo no usarlo.
+  - "Si vienes de Jinja": qué se pega tal cual y qué hay que reescribir.
+  - § 11 bis, **cambiar un prompt que ya atiende**: borrador → diff → publicar con nota,
+    `basedOnVersion` al empezar el borrador, `rebase` si mientras tanto se publicó otra versión, y
+    volver atrás con `restoreVersion`.
+  - Qué tiene el agente solo y qué hay que atar; políticas de prompt para las fotos y para cada
+    capacidad de Google; checklist ampliada.
+- **Nuevo** en `references/catalogo-capacidades.md`:
+  - "Las tres piezas" para conectar cualquier cosa: la herramienta existe, está atada al agente y
+    el prompt dice la política. Los cuatro tipos (BUILTIN, HTTP, MCP, Apps Script), `allowedTools`
+    para limitar las funciones de un servidor MCP y lo que exige el plan.
+  - "Usarlas bien": el mínimo necesario, cómo describir lo que creas, combinaciones obligadas y
+    prohibidas, y probar de lo barato a lo caro (`validate_team` → `test_ai_tool` → un `run_team`
+    por escenario).
+  - El paso de teléfono de la agenda (`telefono_para_cita`), que `flujos` solo ve los flujos del
+    canal de la conversación y la fila de los números del dueño en "Solo desde el panel".
+- **Cambiado**: `crear-agente` remite al catálogo y a `allowedTools`; `actualizar-agente` prepara
+  el prompt como borrador desde el paso 3 y separa herramientas (`addToolIds` / `removeToolIds`) de
+  categorías; `editar-flujo` toma el `config` de `get_flow_schema`, relee el flujo al terminar y, si
+  lo rehace, desactiva el viejo en vez de borrarlo; `crear-equipo` añade el paso `AI_HANDOFF` con
+  `add_flow_step` en vez de mandar al panel. El auditor lee además versiones, diff, campos y fotos.
+- **Nuevo** en `references/errores-y-costes.md`, `references/sintomas-y-arreglos.md` y
+  `references/cuestionario-descubrimiento.md`: los errores de las plantillas del prompt y del
+  borrador, y los síntomas y preguntas que faltaban.
+- **Corregido**: el catálogo decía que Gmail no envía hasta que Google apruebe la app; lo que
+  cuenta es que la conexión tenga el permiso de envío.
+- **Corregido**: en una prueba con `run_team` (sin cliente real) solo se niega lo que ESCRIBE
+  —agendar, reprogramar o cancelar citas, la ficha, arrancar un flujo, las filas de una hoja, los
+  correos y las herramientas HTTP que usan datos del cliente—. Los horarios libres de la agenda, las
+  lecturas de Google y tus herramientas HTTP, MCP y Apps Script se ejecutan de verdad.
+- Nota nueva F35 en el catálogo (capacidades por MCP, `allowedTools`, `addToolIds` /
+  `removeToolIds`). El catálogo sigue contando dieciséis capacidades integradas, once de Google.
+
+Verificado contra el servidor de FlujosChat (`chatboxabel`, `master` en 385ebfc3) con
+`npm run check:plugin`.
+
 ## 1.4.0 — 2026-11-19
 
 Las redes sociales y las tools que el servidor ya exponía y el plugin no enseñaba. El

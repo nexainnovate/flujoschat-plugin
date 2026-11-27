@@ -1,7 +1,7 @@
 {
   "name": "flujoschat",
   "description": "Crea, actualiza y audita agentes y equipos de IA, crea y edita flujos de WhatsApp, y publica, programa y modera comentarios en Instagram, Facebook y LinkedIn en FlujosChat desde Claude. Guía paso a paso, redacta el prompt con buenas prácticas y pide tu acuerdo antes de escribir en tu cuenta o publicar.",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": {
     "name": "FlujosChat",
     "url": "https://www.flujoschat.com"

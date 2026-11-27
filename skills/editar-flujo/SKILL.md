@@ -28,7 +28,8 @@ Requiere el servidor MCP de FlujosChat conectado.
      `sourceUrl` pública); **`list_flow_images`** enseña las ya subidas para reutilizarlas. Solo un
      paso BUTTONS admite portada: en una lista se guardaría y nunca se enviaría.
    - **Pasos y transiciones, uno a uno** (así se cambia un flujo que ya existe; no crees otro).
-     Lee antes con `get_flow` los ids (UUID) de los pasos y las transiciones:
+     Lee antes con `get_flow` los ids (UUID) de los pasos y las transiciones; el `config` de cada
+     tipo de paso sale de `get_flow_schema`:
      - **`add_flow_step`** (`flowId`, `stepType`, `name`, `config`, opcionales `nextStepId` y
        `stepOrder`): añade UN paso; sin `stepOrder` va al final. Nace SIN conectar: enlázalo con
        `add_flow_transition` o poniendo `nextStepId` en el paso anterior.
@@ -45,8 +46,10 @@ Requiere el servidor MCP de FlujosChat conectado.
        `ANY` no lleva `matchValue` y las demás condiciones sí; con varias gana la de mayor
        prioridad.
      - Si la respuesta trae avisos de canal, enséñalos: dicen qué no se verá igual en algún canal.
+     - Al terminar, `get_flow` otra vez y revisa que no quede ningún paso suelto.
      - Rehacer el flujo entero (por ejemplo, otro diseño) sigue siendo **`create_flow`** con el
-       JSON corregido (skill `crear-flujo` y su validador). `update_flow` no añade ni cambia pasos.
+       JSON corregido (skill `crear-flujo` y su validador). `update_flow` no añade ni cambia pasos. Al rehacerlo, desactiva el viejo con `update_flow` en vez
+       de borrarlo.
 
 3. **Confirma** los cambios mostrando el resultado de la tool (y los `warnings` si aplica).
 

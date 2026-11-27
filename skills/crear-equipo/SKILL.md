@@ -80,7 +80,8 @@ persona o decir que no sabe). En `run_team`, `messages` termina con el mensaje d
 para el segundo turno reenvía el historial y el `lastAgentId` del turno anterior (así reproduces
 que el especialista se queda con la conversación). Lee `agentName` (¿respondió quien debía?),
 `toolCalls`, `transferToHuman` e `interactiveReply`. Lo esperado y que no es fallo: variables
-`(sin dato)`; capacidades integradas que dicen estar en una prueba; ningún WhatsApp enviado. Las
+`(sin dato)`; capacidades integradas que escriben y dicen estar en una prueba; ningún WhatsApp
+enviado. Las
 herramientas HTTP y MCP SÍ se ejecutan.
 
 Antes de seguir: cada escenario acabó en el agente esperado. Si no, ajusta fichas o prompts
@@ -90,7 +91,8 @@ Antes de seguir: cada escenario acabó en el agente esperado. Si no, ajusta fich
 
 Un flujo con un paso `AI_HANDOFF` cuya configuración apunta al `teamId` (skill `crear-flujo`;
 el formato exacto del paso lo da `get_flow_schema`, no lo copies de memoria). Si el flujo ya
-existe, el paso se añade desde el editor visual del panel: `update_flow` no añade pasos.
+existe, el paso se añade en el sitio con `add_flow_step` y se enlaza con `add_flow_transition` o
+con el `nextStepId` del paso anterior (skill `editar-flujo`); `update_flow` no añade pasos.
 Recuerda los pendientes del panel: aviso al equipo al derivar y demostración pública.
 
 ## 8. Reglas

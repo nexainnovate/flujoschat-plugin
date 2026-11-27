@@ -12,6 +12,12 @@ los publica `get_agent_schema`: aquí no se repiten.
 - La plataforma le añade cosas por detrás: el día de hoy en la zona del negocio (sin hora), la
   herramienta para derivar a una persona, la búsqueda en conocimiento si hay categorías, y en la
   demostración pública un bloque propio. **No las repitas.** [F5][F6][F13]
+- **Lo automático y lo que hay que atar.** Derivar a una persona (`transfer_to_human`) y buscar
+  en el conocimiento (si hay categorías) los tiene el agente sin hacer nada. Todo lo demás
+  —botones, agenda, ficha, fotos, flujos, Google, tus herramientas— existe solo si está atado al
+  agente. Un prompt que pide "envía botones" o "agenda la cita" sin la capacidad atada hace que el
+  agente lo prometa y no lo cumpla. Mira las herramientas del agente (`get_agent`) antes de
+  escribir una sola política. [F1][F6]
 - Un prompt no es un cortafuegos. Lo que de verdad limita al agente es qué herramientas tiene,
   que sean de solo lectura al principio, y que pueda derivar a una persona. El prompt lo hace
   útil; no lo hace seguro. [F14]
@@ -21,7 +27,8 @@ los publica `get_agent_schema`: aquí no se repiten.
 1. **Identidad y rol** (2 líneas): nombre del asistente, negocio, a quién atiende. Aquí entra
    `{{cliente.nombre}}`.
 2. **Tu trabajo**: qué significa "éxito" en una conversación.
-3. **Datos del cliente**: bloque de marcadores con el formato "Etiqueta: {{…}}".
+3. **Datos del cliente**: bloque de marcadores con el formato "Etiqueta: {{…}}" y, si hace
+   falta, condiciones para adaptar el tono o el contexto (§ 6 bis).
 4. **Cómo trabajas**: la política de cada fuente y capacidad que tiene atada (cuándo consultar,
    qué confirmar antes de actuar, qué hacer si falla).
 5. **Lo que no haces**: prohibiciones concretas. Valen más que los pedidos.
@@ -107,7 +114,13 @@ una categoría de conocimiento "Tratamientos y precios"; variables `{{cliente.no
 ## 6. Variables y el valor "(sin dato)"
 
 - Solo existen `{{cliente.nombre}}`, `{{cliente.telefono}}` y `{{campo.<slug>}}`, con doble
-  llave y con su prefijo. Cualquier otra llave se queda literal. [F16]
+  llave y con su prefijo. Una llave doble sin prefijo (`{{ nombre }}`) se queda literal: sirve
+  para escribirle al modelo un ejemplo o una plantilla, pero no es un dato. [F16]
+- Un marcador puede llevar un valor de reserva: `{{cliente.nombre|default("amigo")}}` escribe
+  "amigo" cuando el dato está vacío, en vez de `(sin dato)`. Es el único filtro que existe
+  (nada de mayúsculas ni recortes). Úsalo para que una frase suene natural, nunca para inventar
+  un dato: un documento o un teléfono de reserva es un dato falso. Donde el modelo tenga que
+  SABER que falta algo, deja el marcador sin reserva. [F17]
 - El slug es el nombre del campo personalizado en minúsculas, sin acentos y con guiones bajos.
   Verifícalo con el dueño antes de escribirlo.
 - Escribe cada marcador como "Etiqueta: {{…}}". Bien: "Documento: {{campo.dni}}". Mal: "Su DNI
@@ -118,6 +131,97 @@ una categoría de conocimiento "Tratamientos y precios"; variables `{{cliente.no
   Se sanea y se recorta, pero eso no lo vuelve confiable. [F16]
 - En una prueba con `run_team` no hay conversación: todos los marcadores salen como
   `(sin dato)`. Es lo esperado, no un error.
+
+## 6 bis. Condiciones: adaptar el prompt a cada cliente
+
+Una parte del prompt puede incluirse solo según un dato del cliente. [F17]
+
+```text
+DATOS DEL CLIENTE
+- Nombre: {{cliente.nombre}}
+- Sede: {{campo.sede}}
+
+{{#if campo.sede == "Miraflores"}}
+Si pregunta por estacionamiento, dile que la sede tiene cochera gratuita.
+{{else}}
+Si pregunta por estacionamiento, dile que no tenemos cochera y sugiérele la playa de la esquina.
+{{/if}}
+
+{{#if campo.dni}}
+Ya tienes su documento: no se lo vuelvas a pedir.
+{{/if}}
+```
+
+- **Dos formas de escribir lo mismo**, y se pueden mezclar en un prompt:
+
+  | | Forma de llaves | Forma Jinja |
+  |---|---|---|
+  | abrir | `{{#if CONDICIÓN}}` | `{% if CONDICIÓN %}` |
+  | otra rama | `{{else if CONDICIÓN}}` | `{% elif CONDICIÓN %}` |
+  | si no | `{{else}}` | `{% else %}` |
+  | cerrar | `{{/if}}` | `{% endif %}` |
+
+  Las ramas intermedias y el "si no" son opcionales; el orden es siempre abrir, ramas, "si no",
+  cerrar. Una etiqueta sola en su línea no deja una línea en blanco.
+- **La condición** usa un dato (`cliente.<dato>` o `campo.<slug>`) solo (¿tiene valor?) o
+  comparado con `==` / `!=` contra un texto entre comillas, simples o dobles. Se combinan con
+  `and`, `or`, `not` y paréntesis (`not` pesa más que `and`, y `and` más que `or`). El dato
+  puede llevar su valor de reserva: `campo.sede|default("Miraflores") == "Miraflores"` es
+  verdadera cuando la sede está vacía. `true` y `false` solo van detrás de `==`/`!=` o dentro
+  de `default(…)` (`campo.vip|default(false)`), nunca solos: para apagar un bloque, usa un
+  comentario.
+- Comparan sin distinguir mayúsculas, tildes ni espacios sobrantes ("miraflores" casa con
+  "Miraflores"). No hay números, ni mayor/menor, ni "contiene".
+- Topes: hasta 5 condiciones anidadas, y cada condición hasta 300 caracteres y 10 datos. Un texto
+  entre comillas no puede llevar `}}` ni `%}`.
+
+```text
+{% if campo.plan == "empresa" or campo.plan == "pro" %}
+Trátalo de usted y ve al detalle.
+{% elif not cliente.nombre %}
+Pregúntale su nombre antes de seguir.
+{% else %}
+Tutéalo y ve al grano.
+{% endif %}
+```
+
+- Una condición o etiqueta mal escrita hace FALLAR la creación, la actualización o la
+  publicación, y el error dice la línea («Plantilla del prompt inválida»). Un borrador sí se
+  guarda roto (avisa), pero no se puede publicar. Los más comunes:
+  - un dato sin `cliente.` ni `campo.`:
+    «Variable desconocida en la condición: solo cliente.<dato> o campo.<dato>»
+  - una etiqueta que no existe:
+    «Etiqueta no admitida: solo if, elif, else y endif (ni for, ni set, ni macros)»
+  - un if sin cerrar, un else o elif sin su if, o un filtro que no es `default`.
+
+**Comentarios.** Lo que va entre `{#` y `#}` es una nota del autor: se quita antes de que el
+modelo lea el prompt, así que no gasta nada ni le llega nunca. Sirve para explicar por qué está
+una regla ("{# lo pidió el dueño tras el reclamo de marzo #}") o para apagar un bloque sin
+borrarlo. Puede ocupar varias líneas. Un comentario sin cerrar hace fallar el guardado:
+«Falta cerrar un comentario: termina con #}». No pongas en un comentario nada secreto: el
+prompt, con sus comentarios, lo ve cualquiera que edite el agente.
+
+**Si vienes de Jinja.** Puedes pegar tal cual los comentarios `{# … #}` y los bloques
+`{% if %}` / `{% elif %}` / `{% else %}` / `{% endif %}`, con `and`, `or`, `not` y
+`|default`. Lo que hay que cambiar:
+
+- Cada variable se reescribe como `cliente.<dato>` o `campo.<slug>`. Las variables de otro
+  sistema (`{{ nombre }}`, `{% if snapshot %}`) no existen aquí: en un marcador `{{ }}` se quedan
+  literales, y dentro de una condición hacen fallar el guardado. Si el dato hace falta, créalo
+  como campo de la ficha y úsalo como `campo.<slug>`.
+- `{% set %}`, `{% for %}`, macros, `include` y cualquier filtro que no sea `default` no
+  existen: quítalos. Un bucle suele ser un dato que va al conocimiento; un `set`, una frase
+  escrita directamente.
+- **Para tono y contexto, nunca para conceder algo.** El valor lo teclea el cliente o lo captura
+  un flujo de lo que escribió: "si {{campo.vip}} es sí, haz descuento" es regalar el descuento a
+  quien escriba "sí". Lo que da derechos (precios especiales, excepciones) se consulta en tu
+  sistema con una herramienta.
+- **Sin valor, el campo cuenta como vacío**: `{{#if campo.x}}` y `== "valor"` salen falsas, pero
+  **`!= "valor"` y `not campo.x` salen VERDADERAS** (vacío no es "valor"), y si el dato lleva
+  `|default(…)` se usa la reserva. Pasa en una prueba con `run_team` (no hay cliente) y con un
+  cliente real que no tiene ese dato: escribe cada condición pensando en ese caso. La rama que depende de un dato concreto solo se ve en una conversación real con ese dato.
+- Úsalas con medida: dos o tres por prompt. Si cada cliente necesita un prompt distinto, son dos
+  agentes (o un dato en el conocimiento), no veinte condiciones.
 
 ## 7. Postura ante manipulación
 
@@ -164,7 +268,43 @@ Escribe una política solo para las capacidades que el agente tiene atadas de ve
 | Botones | "Cuando ofrezcas 2 o 3 opciones cerradas, envíalas como botones con títulos cortos. No para preguntas abiertas." [F2] |
 | Ficha del cliente | "En cuanto el cliente te dé nombre, documento o correo, guárdalo en su ficha sin comentarlo. No inventes valores." [F1] |
 | Flujos | "Si el cliente quiere ver [X], arráncale el flujo y despídete en una frase; no escribas tú el primer mensaje del flujo." [F1] |
+| Fotos (imagenes) | "Cuando pregunten por [la carta / cómo pagar / el local], envía la foto que corresponde en vez de describirla, con una frase corta." El "cuándo" fino de cada foto va en su campo `cuando` de `imageAttachments`, no en el prompt. [F18] |
+| Google Calendar (consultar / editar) | "Antes de proponer una reunión, mira las horas ocupadas; propón 2 o 3 huecos; confirma fecha, hora y duración antes de crear el evento; para mover, busca primero el evento." [F1] |
+| Agenda completa del dueño | Nada para clientes: solo responde a los números del dueño. Si el agente atiende al dueño: "Si quien escribe pide su agenda, consúltala y resúmela por día." [F1] |
+| Sheets (consultar / anotar / modificar) | "Busca solo por [número de pedido]; responde únicamente con datos de la fila de ESE cliente; antes de cambiar un dato, repítelo y espera un sí; si hay dudas sobre qué fila es, no escribas y deriva." [F1] |
+| Drive | "Para dudas sobre [manuales, políticas], lee primero el documento; cita lo que dice, no lo resumas a tu manera; si no está, dilo." [F1] |
+| Gmail (avisar al equipo / escribir al cliente) | Equipo: "Avisa por correo al equipo cuando [caso concreto]; una vez por conversación." Cliente: "Si pide el resumen por correo, mándalo en texto plano, sin enlaces." [F1] |
+| Directorio / Contactos | "Para saber a quién derivar un tema, busca en el directorio; no des al cliente correos ni datos de empleados que no pida." / "Si el número está en los contactos, salúdalo por su nombre; no le digas que lo buscaste." [F1] |
 | Derivar a persona | Criterios y frase al cliente. NO definas la herramienta. [F6] |
+
+## 11 bis. Cambiar un prompt que ya está atendiendo
+
+`update_agent` con `instructions` publica AL MOMENTO: el siguiente mensaje de un cliente ya usa el
+texto nuevo. Para un agente que atiende de verdad, el camino recomendado es: [F19]
+
+1. `save_agent_prompt_draft` con el texto completo nuevo y `basedOnVersion` (la versión publicada que
+   leíste con `list_agent_prompt_versions`; obligatorio al empezar un borrador o con `rebase`). Si se
+   publicó otra entretanto, falla: compara antes de seguir. Lo publicado sigue atendiendo.
+2. `diff_agent_prompt` (por defecto, publicado contra borrador): enséñale al dueño SOLO lo que
+   cambia, con `+` y `-`, en vez de dos prompts enteros.
+3. Con su sí, `publish_agent_prompt` con una `note` corta de qué cambia y por qué ("no da
+   descuentos; deriva reclamos"). Queda como versión nueva.
+   `run_team` y los clientes usan siempre lo PUBLICADO: un borrador no se puede probar, así que
+   la prueba con un escenario va justo después de publicar.
+4. Si sale mal: `list_agent_prompt_versions` para ver el historial y `publish_agent_prompt` con
+   `restoreVersion` para volver a la anterior (añade una versión; no borra nada).
+
+Pasa SIEMPRE `expectedDraftUpdatedAt` (la fecha del borrador que leíste con
+`list_agent_prompt_versions`, o `null` si no había). Al guardar, sin ella no se comprueba nada y
+pisarías el borrador de otra persona; al PUBLICAR es obligatoria y sin ella falla: es lo que ata la
+publicación al texto que el dueño revisó. Si responde que el borrador cambió, otra
+persona lo editó entretanto: vuelve a leerlo y repite.
+
+Si alguien PUBLICÓ otra versión después de empezar el borrador (también con `update_agent`), el
+borrador queda desfasado y publicarlo FALLA, porque desharía ese cambio. Compara con lo publicado
+(`diff_agent_prompt`), incorpora lo que falte, enséñaselo al dueño y vuelve a guardar con
+`rebase: true`; solo entonces se puede publicar. Para descartar un borrador:
+`save_agent_prompt_draft` con `instructions: null`.
 
 ## 12. Checklist antes de crear o guardar
 
@@ -174,7 +314,11 @@ Escribe una política solo para las capacidades que el agente tiene atadas de ve
 - [ ] Al menos 3 prohibiciones concretas.
 - [ ] Criterio de derivación + frase que le dice al cliente.
 - [ ] Una política por cada capacidad atada, y ninguna política de capacidades que NO tiene.
-- [ ] Variables con el patrón "Etiqueta: {{…}}" y slugs verificados con el dueño.
+- [ ] Variables con el patrón "Etiqueta: {{…}}" y slugs verificados con el dueño
+      (`list_custom_fields`).
+- [ ] Condiciones bien cerradas, solo con `cliente.`/`campo.`, y ninguna que conceda algo.
+- [ ] Nada de `{% set %}`, `{% for %}` ni filtros que no sean `default`; comentarios cerrados.
+- [ ] Ninguna instrucción que dependa de una capacidad que el agente no tiene atada.
 - [ ] Sin fecha ni hora, sin reglas por hora.
 - [ ] Sin precios, catálogo ni políticas largas (eso va a conocimiento).
 - [ ] Sin direcciones, tokens ni claves.
@@ -196,3 +340,6 @@ Escribe una política solo para las capacidades que el agente tiene atadas de ve
 | F13 | Búsqueda automática si hay categorías | `backend/src/modules/ai/runtime/agent-builder.js` | 2026-09-05 |
 | F14 | El prompt no es un cortafuegos; bloque propio en la demo | `backend/src/modules/ai/runtime/agent-builder.js` | 2026-09-05 |
 | F16 | Variables, `(sin dato)`, saneado, no fiarse del valor | `docs/referencia/variables-de-prompt.md`, `backend/src/modules/ai/runtime/prompt-variables.js` | 2026-09-05 |
+| F17 | Condiciones en las dos formas (`{{#if}}`/`{{else if}}`/`{{else}}`/`{{/if}}` y `{% if %}`/`{% elif %}`/`{% else %}`/`{% endif %}`), `and`/`or`/`not`, comillas simples o dobles, valor de reserva `default`, comentarios `{# #}`, topes y mensajes de error; sin valor el campo cuenta como vacío (`!=` verdadera) | `docs/referencia/variables-de-prompt.md`, `backend/src/modules/ai/runtime/prompt-variables.js` | 2026-10-26 |
+| F18 | Fotos del agente y su campo `cuando` | `backend/src/modules/mcp/agent-schema.js` | 2026-10-26 |
+| F19 | Borrador, diff, publicar y restaurar versiones del prompt | `docs/referencia/prompt-versiones.md`, `backend/src/modules/mcp/tools/ai.tools.js` | 2026-10-26 |
